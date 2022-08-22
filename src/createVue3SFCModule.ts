@@ -44,29 +44,29 @@ type PreprocessLang = SFCAsyncStyleCompileOptions['preprocessLang'];
 /**
  * the version of the library (process.env.VERSION is set by webpack, at compile-time)
  */
-const version : string = process.env.VERSION;
+const version: string = process.env.VERSION;
 
 // @ts-ignore
-const targetBrowserBabelPluginsHash : string = hash(...Object.keys({ ...(typeof ___targetBrowserBabelPlugins !== 'undefined' ? ___targetBrowserBabelPlugins : {}) }));
+const targetBrowserBabelPluginsHash: string = hash(...Object.keys({ ...(typeof ___targetBrowserBabelPlugins !== 'undefined' ? ___targetBrowserBabelPlugins : {}) }));
 
-const genSourcemap : boolean = !!process.env.GEN_SOURCEMAP;
-
-/**
- * @internal
- */
-const isProd : boolean = process.env.NODE_ENV === 'production';
-
-
+const genSourcemap: boolean = !!process.env.GEN_SOURCEMAP;
 
 /**
  * @internal
  */
+const isProd: boolean = process.env.NODE_ENV === 'production';
 
-export async function createSFCModule(source : string, filename : AbstractPath, options : Options) : Promise<ModuleExport> {
+
+
+/**
+ * @internal
+ */
+
+export async function createSFCModule(source: string, filename: AbstractPath, options: Options): Promise<ModuleExport> {
 
 	const strFilename = filename.toString();
 
-	const component : { [key: string]: any } = {};
+	const component: { [key: string]: any } = {};
 
 	const { delimiters, moduleCache, compiledCache, getResource, addStyle, log, additionalBabelParserPlugins = [], additionalBabelPlugins = {}, customBlockHandler } = options;
 
@@ -77,14 +77,15 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 	});
 
 
-	const customBlockCallbacks : CustomBlockCallback[] = customBlockHandler !== undefined ? await Promise.all( descriptor.customBlocks.map((block) => customBlockHandler(block, filename, options)) ) : [];
+	const customBlockCallbacks: CustomBlockCallback[] = customBlockHandler !== undefined ? await Promise.all(descriptor.customBlocks.map((block) => customBlockHandler(block, filename, options))) : [];
 
-	const componentHash = hash(strFilename, version, targetBrowserBabelPluginsHash);
+	const componentHash = strFilename
+	// const componentHash = hash(strFilename, version, targetBrowserBabelPluginsHash);
 	const scopeId = `data-v-${componentHash}`;
 
 	const hasScoped = descriptor.styles.some(e => e.scoped);
 
-	if ( hasScoped ) {
+	if (hasScoped) {
 
 		// see https://github.com/vuejs/vue-next/blob/4549e65baea54bfd10116241a6a5eba91ec3f632/packages/runtime-core/src/component.ts#L87
 		// vue-loader: https://github.com/vuejs/vue-loader/blob/65c91108e5ace3a8c00c569f08e9a847be5754f6/src/index.ts#L223
@@ -92,11 +93,11 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 	}
 
 	// hack: asynchronously preloads the language processor before it is required by the synchronous preprocessCustomRequire() callback, see below
-	if ( descriptor.template && descriptor.template.lang )
+	if (descriptor.template && descriptor.template.lang)
 		await loadModuleInternal({ refPath: filename, relPath: descriptor.template.lang }, options);
 
 
-	const compileTemplateOptions : SFCTemplateCompileOptions = descriptor.template ? {
+	const compileTemplateOptions: SFCTemplateCompileOptions = descriptor.template ? {
 		// hack, since sourceMap is not configurable an we want to get rid of source-map dependency. see genSourcemap
 		compiler: { ...vue_CompilerDOM, compile: (template, options) => vue_CompilerDOM.compile(template, { ...options, sourceMap: genSourcemap }) },
 		source: descriptor.template.src ? (await (await getResource({ refPath: filename, relPath: descriptor.template.src }, options).getContent()).getContentData(false)) as string : descriptor.template.content,
@@ -115,18 +116,18 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 		preprocessCustomRequire: id => moduleCache[id], // makes consolidate optional, see https://github.com/vuejs/vue-next/blob/15baaf14f025f6b1d46174c9713a2ec517741d0d/packages/compiler-sfc/src/compileTemplate.ts#L111-L113
 	} : null;
 
-	if ( descriptor.script || descriptor.scriptSetup ) {
+	if (descriptor.script || descriptor.scriptSetup) {
 
 		// eg: https://github.com/vuejs/vue-loader/blob/6ed553f70b163031457acc961901313390cde9ef/src/index.ts#L136
 
 		// doc: <script setup> cannot be used with the src attribute.
 		// TBD: check if this is the right solution
-		if ( descriptor.script?.src )
+		if (descriptor.script?.src)
 			descriptor.script.content = (await (await getResource({ refPath: filename, relPath: descriptor.script.src }, options).getContent()).getContentData(false)) as string;
 
 		// TBD: handle <script setup src="...
 
-		const [ depsList, transformedScriptSource ] = await withCache(compiledCache, [ componentHash, descriptor.script?.content, descriptor.scriptSetup?.content, additionalBabelParserPlugins, Object.keys(additionalBabelPlugins) ], async ({ preventCache }) => {
+		const [depsList, transformedScriptSource] = await withCache(compiledCache, [componentHash, descriptor.script?.content, descriptor.scriptSetup?.content, additionalBabelParserPlugins, Object.keys(additionalBabelPlugins)], async ({ preventCache }) => {
 
 			// src: https://github.com/vuejs/vue-next/blob/15baaf14f025f6b1d46174c9713a2ec517741d0d/packages/compiler-sfc/src/compileScript.ts#L43
 			const scriptBlock = sfc_compileScript(descriptor, {
@@ -141,10 +142,10 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 			});
 
 			// see https://github.com/vuejs/vue-loader/blob/12aaf2ea77add8654c50c8751bad135f1881e53f/src/templateLoader.ts#L54
-			if ( compileTemplateOptions !== null )
+			if (compileTemplateOptions !== null)
 				compileTemplateOptions.compilerOptions.bindingMetadata = scriptBlock.bindings;
 
-			return await transformJSCode(scriptBlock.content, true, strFilename, [ ...additionalBabelParserPlugins, 'jsx' ], { ...additionalBabelPlugins,  jsx }, log);
+			return await transformJSCode(scriptBlock.content, true, strFilename, [...additionalBabelParserPlugins, 'jsx'], { ...additionalBabelPlugins, jsx }, log);
 
 		});
 
@@ -153,30 +154,30 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 	}
 
 
-	if ( descriptor.template !== null ) {
+	if (descriptor.template !== null) {
 		// compiler-sfc src: https://github.com/vuejs/vue-next/blob/15baaf14f025f6b1d46174c9713a2ec517741d0d/packages/compiler-sfc/src/compileTemplate.ts#L39
 		// compileTemplate eg: https://github.com/vuejs/vue-loader/blob/next/src/templateLoader.ts#L33
-		const [ templateDepsList, templateTransformedSource ] = await withCache(compiledCache, [ componentHash, compileTemplateOptions.source ], async ({ preventCache }) => {
+		const [templateDepsList, templateTransformedSource] = await withCache(compiledCache, [componentHash, compileTemplateOptions.source], async ({ preventCache }) => {
 
 			const template = sfc_compileTemplate(compileTemplateOptions);
 
-			if ( template.errors.length ) {
+			if (template.errors.length) {
 
 				preventCache();
-				for ( const err of template.errors ) {
+				for (const err of template.errors) {
 					if (typeof err === 'object') {
 						if (err.loc) {
-							log?.('error', 'SFC template', formatErrorLineColumn(err.message, strFilename, source, err.loc.start.line + descriptor.template.loc.start.line - 1, err.loc.start.column) );
+							log?.('error', 'SFC template', formatErrorLineColumn(err.message, strFilename, source, err.loc.start.line + descriptor.template.loc.start.line - 1, err.loc.start.column));
 						} else {
-							log?.('error', 'SFC template', formatError(err.message, strFilename, source) );
+							log?.('error', 'SFC template', formatError(err.message, strFilename, source));
 						}
 					} else {
-						log?.('error', 'SFC template', formatError(err, strFilename, source) );
+						log?.('error', 'SFC template', formatError(err, strFilename, source));
 					}
 				}
 			}
 
-			for ( const err of template.tips )
+			for (const err of template.tips)
 				log?.('info', 'SFC template', err);
 
 			return await transformJSCode(template.code, true, descriptor.filename, additionalBabelParserPlugins, additionalBabelPlugins, log);
@@ -187,15 +188,15 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 	}
 
 
-	for ( const descStyle of descriptor.styles ) {
+	for (const descStyle of descriptor.styles) {
 
 		// hack: asynchronously preloads the language processor before it is required by the synchronous preprocessCustomRequire() callback, see below
-		if ( descStyle.lang )
+		if (descStyle.lang)
 			await loadModuleInternal({ refPath: filename, relPath: descStyle.lang }, options);
 
 		const src = descStyle.src ? (await (await getResource({ refPath: filename, relPath: descStyle.src }, options).getContent()).getContentData(false)) as string : descStyle.content;
 
-		const style = await withCache(compiledCache, [ componentHash, src ], async ({ preventCache }) => {
+		const style = await withCache(compiledCache, [componentHash, src], async ({ preventCache }) => {
 
 			// src: https://github.com/vuejs/vue-next/blob/15baaf14f025f6b1d46174c9713a2ec517741d0d/packages/compiler-sfc/src/compileStyle.ts#L70
 			const compiledStyle = await sfc_compileStyleAsync({
@@ -209,13 +210,13 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 				preprocessCustomRequire: id => moduleCache[id],
 			});
 
-			if ( compiledStyle.errors.length ) {
+			if (compiledStyle.errors.length) {
 
 				preventCache();
-				for ( const err of compiledStyle.errors ) {
+				for (const err of compiledStyle.errors) {
 
 					// @ts-ignore (Property 'line' does not exist on type 'Error' and Property 'column' does not exist on type 'Error')
-					log?.('error', 'SFC style', formatErrorLineColumn(err.message, filename, source, err.line + descStyle.loc.start.line - 1, err.column) );
+					log?.('error', 'SFC style', formatErrorLineColumn(err.message, filename, source, err.line + descStyle.loc.start.line - 1, err.column));
 				}
 			}
 
@@ -225,7 +226,7 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 		addStyle(style, descStyle.scoped ? scopeId : undefined);
 	}
 
-	if ( customBlockHandler !== undefined )
+	if (customBlockHandler !== undefined)
 		await Promise.all(customBlockCallbacks.map(cb => cb?.(component)));
 
 	return component;
