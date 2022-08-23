@@ -44,25 +44,25 @@ export { version as vueVersion } from 'vue-template-compiler/package.json'
 /**
  * the version of the library (process.env.VERSION is set by webpack, at compile-time)
  */
-const version : string = process.env.VERSION;
+const version: string = process.env.VERSION;
 
 // @ts-ignore
-const targetBrowserBabelPluginsHash : string = hash(...Object.keys({ ...(typeof ___targetBrowserBabelPlugins !== 'undefined' ? ___targetBrowserBabelPlugins : {}) }));
+const targetBrowserBabelPluginsHash: string = hash(...Object.keys({ ...(typeof ___targetBrowserBabelPlugins !== 'undefined' ? ___targetBrowserBabelPlugins : {}) }));
 
-const genSourcemap : boolean = !!process.env.GEN_SOURCEMAP;
-
-/**
- * @internal
- */
-const isProd : boolean = process.env.NODE_ENV === 'production';
-
-
+const genSourcemap: boolean = !!process.env.GEN_SOURCEMAP;
 
 /**
  * @internal
  */
+const isProd: boolean = process.env.NODE_ENV === 'production';
 
-export async function createSFCModule(source : string, filename : AbstractPath, options : Options) : Promise<ModuleExport> {
+
+
+/**
+ * @internal
+ */
+
+export async function createSFCModule(source: string, filename: AbstractPath, options: Options): Promise<ModuleExport> {
 
 	const strFilename = filename.toString();
 
@@ -74,16 +74,17 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 		source,
 		filename: strFilename,
 		needMap: genSourcemap,
-		compiler: vueTemplateCompiler as VueTemplateCompiler}
-		);
+		compiler: vueTemplateCompiler as VueTemplateCompiler
+	}
+	);
 
-	const customBlockCallbacks : CustomBlockCallback[] = customBlockHandler !== undefined ? await Promise.all( descriptor.customBlocks.map((block ) => customBlockHandler(block, filename, options)) ) : [];
+	const customBlockCallbacks: CustomBlockCallback[] = customBlockHandler !== undefined ? await Promise.all(descriptor.customBlocks.map((block) => customBlockHandler(block, filename, options))) : [];
 
 	const componentHash = hash(strFilename, version, targetBrowserBabelPluginsHash);
 	const scopeId = `data-v-${componentHash}`;
 
 	// hack: asynchronously preloads the language processor before it is required by the synchronous preprocessCustomRequire() callback, see below
-	if ( descriptor.template && descriptor.template.lang )
+	if (descriptor.template && descriptor.template.lang)
 		await loadModuleInternal({ refPath: filename, relPath: descriptor.template.lang }, options);
 
 
@@ -91,10 +92,10 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 
 	// https://github.com/vuejs/vue-loader/blob/b53ae44e4b9958db290f5918248071e9d2445d38/lib/runtime/componentNormalizer.js#L36
 	if (hasScoped) {
-		Object.assign(component, {_scopeId: scopeId});
+		Object.assign(component, { _scopeId: scopeId });
 	}
 
-	const compileTemplateOptions : TemplateCompileOptions = descriptor.template ? {
+	const compileTemplateOptions: TemplateCompileOptions = descriptor.template ? {
 		// hack, since sourceMap is not configurable an we want to get rid of source-map dependency. see genSourcemap
 		source: descriptor.template.src ? (await (await getResource({ refPath: filename, relPath: descriptor.template.src }, options).getContent()).getContentData(false)) as string : descriptor.template.content,
 		filename: strFilename,
@@ -112,10 +113,10 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 	// Vue2 doesn't support preprocessCustomRequire, so we have to preprocess manually
 	if (descriptor.template?.lang) {
 		const preprocess = moduleCache[descriptor.template.lang] as any;
-		compileTemplateOptions.source = await withCache(compiledCache, [ componentHash, compileTemplateOptions.source, descriptor.template.lang ], async ({ preventCache }) => {
+		compileTemplateOptions.source = await withCache(compiledCache, [componentHash, compileTemplateOptions.source], async ({ preventCache }) => {
 
 			return await new Promise((resolve, reject) => {
-				preprocess.render(compileTemplateOptions.source, compileTemplateOptions.preprocessOptions, (_err : any, _res : any) => {
+				preprocess.render(compileTemplateOptions.source, compileTemplateOptions.preprocessOptions, (_err: any, _res: any) => {
 
 					if (_err)
 						reject(_err)
@@ -127,15 +128,15 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 		});
 	}
 
-	if ( descriptor.script ) {
+	if (descriptor.script) {
 
 		// eg: https://github.com/vuejs/vue-loader/blob/v15.9.6/lib/index.js
 
 		const src = descriptor.script.src ? (await (await getResource({ refPath: filename, relPath: descriptor.script.src }, options).getContent()).getContentData(false)) as string : descriptor.script.content;
 
-		const [ depsList, transformedScriptSource ] = await withCache(compiledCache, [ componentHash, src, additionalBabelParserPlugins, Object.keys(additionalBabelPlugins) ], async ({ preventCache }) => {
+		const [depsList, transformedScriptSource] = await withCache(compiledCache, [componentHash, src, additionalBabelParserPlugins, Object.keys(additionalBabelPlugins)], async ({ preventCache }) => {
 
-			return await transformJSCode(src, true, strFilename, [ ...additionalBabelParserPlugins, 'jsx' ], { ...additionalBabelPlugins, jsx, babelSugarInjectH }, log);
+			return await transformJSCode(src, true, strFilename, [...additionalBabelParserPlugins, 'jsx'], { ...additionalBabelPlugins, jsx, babelSugarInjectH }, log);
 		});
 
 		await loadDeps(filename, depsList, options);
@@ -143,18 +144,18 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 	}
 
 
-	if ( descriptor.template !== null ) {
+	if (descriptor.template !== null) {
 
-		const [ templateDepsList, templateTransformedSource ] = await withCache(compiledCache, [ componentHash, compileTemplateOptions.source ], async ({ preventCache }) => {
+		const [templateDepsList, templateTransformedSource] = await withCache(compiledCache, [componentHash, compileTemplateOptions.source], async ({ preventCache }) => {
 
 			const template = sfc_compileTemplate(compileTemplateOptions);
 			// "@vue/component-compiler-utils" does NOT assume any module system, and expose render in global scope.
 			template.code += `\nmodule.exports = { render: render, staticRenderFns: staticRenderFns }`
 
-			if ( template.errors.length ) {
+			if (template.errors.length) {
 
 				preventCache();
-				for ( let err of template.errors ) {
+				for (let err of template.errors) {
 					if (typeof err !== 'object') {
 						err = {
 							msg: err,
@@ -163,11 +164,11 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 						}
 					}
 
-					log?.('error', 'SFC template', formatErrorStartEnd(err.msg, strFilename, compileTemplateOptions.source.trim(), err.start, err.end ));
+					log?.('error', 'SFC template', formatErrorStartEnd(err.msg, strFilename, compileTemplateOptions.source.trim(), err.start, err.end));
 				}
 			}
 
-			for ( let err of template.tips ) {
+			for (let err of template.tips) {
 				if (typeof err !== 'object') {
 					err = {
 						msg: err,
@@ -176,7 +177,7 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 					}
 				}
 
-				log?.('info', 'SFC template', formatErrorStartEnd(err.msg, strFilename, source, err.start, err.end ));
+				log?.('info', 'SFC template', formatErrorStartEnd(err.msg, strFilename, source, err.start, err.end));
 			}
 
 			return await transformJSCode(template.code, true, filename, additionalBabelParserPlugins, additionalBabelPlugins, log);
@@ -187,11 +188,11 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 	}
 
 
-	for ( const descStyle of descriptor.styles ) {
+	for (const descStyle of descriptor.styles) {
 
 		const src = descStyle.src ? (await (await getResource({ refPath: filename, relPath: descStyle.src }, options).getContent()).getContentData(false)) as string : descStyle.content;
 
-		const style = await withCache(compiledCache, [ componentHash, src, descStyle.lang ], async ({ preventCache }) => {
+		const style = await withCache(compiledCache, [componentHash, src, descStyle.lang], async ({ preventCache }) => {
 
 			const compileStyleOptions: StyleCompileOptions = {
 				source: src,
@@ -208,14 +209,14 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 			}
 
 			// Vue2 doesn't support preprocessCustomRequire, so we have to preprocess manually
-			if ( descStyle.lang && processors[descStyle.lang] === undefined )
+			if (descStyle.lang && processors[descStyle.lang] === undefined)
 				processors[descStyle.lang] = await loadModuleInternal({ refPath: filename, relPath: descStyle.lang }, options) as StylePreprocessor;
 
 			const compiledStyle = await sfc_compileStyleAsync(compileStyleOptions);
-			if ( compiledStyle.errors.length ) {
+			if (compiledStyle.errors.length) {
 
 				preventCache();
-				for ( const err of compiledStyle.errors ) {
+				for (const err of compiledStyle.errors) {
 
 					log?.('error', 'SFC style', formatError(err, strFilename, source));
 				}
@@ -227,7 +228,7 @@ export async function createSFCModule(source : string, filename : AbstractPath, 
 		addStyle(style, descStyle.scoped ? scopeId : undefined);
 	}
 
-	if ( customBlockHandler !== undefined )
+	if (customBlockHandler !== undefined)
 		await Promise.all(customBlockCallbacks.map(cb => cb?.(component)));
 
 	return component;

@@ -79,8 +79,7 @@ export async function createSFCModule(source: string, filename: AbstractPath, op
 
 	const customBlockCallbacks: CustomBlockCallback[] = customBlockHandler !== undefined ? await Promise.all(descriptor.customBlocks.map((block) => customBlockHandler(block, filename, options))) : [];
 
-	const componentHash = strFilename
-	// const componentHash = hash(strFilename, version, targetBrowserBabelPluginsHash);
+	const componentHash = hash(strFilename, version, targetBrowserBabelPluginsHash);
 	const scopeId = `data-v-${componentHash}`;
 
 	const hasScoped = descriptor.styles.some(e => e.scoped);
@@ -127,7 +126,7 @@ export async function createSFCModule(source: string, filename: AbstractPath, op
 
 		// TBD: handle <script setup src="...
 
-		const [depsList, transformedScriptSource] = await withCache(compiledCache, [componentHash, descriptor.script?.content, descriptor.scriptSetup?.content, additionalBabelParserPlugins, Object.keys(additionalBabelPlugins)], async ({ preventCache }) => {
+		const [depsList, transformedScriptSource] = await withCache(compiledCache, [strFilename, descriptor.script?.content, descriptor.scriptSetup?.content, additionalBabelParserPlugins, Object.keys(additionalBabelPlugins)], async ({ preventCache }) => {
 
 			// src: https://github.com/vuejs/vue-next/blob/15baaf14f025f6b1d46174c9713a2ec517741d0d/packages/compiler-sfc/src/compileScript.ts#L43
 			const scriptBlock = sfc_compileScript(descriptor, {
@@ -157,7 +156,7 @@ export async function createSFCModule(source: string, filename: AbstractPath, op
 	if (descriptor.template !== null) {
 		// compiler-sfc src: https://github.com/vuejs/vue-next/blob/15baaf14f025f6b1d46174c9713a2ec517741d0d/packages/compiler-sfc/src/compileTemplate.ts#L39
 		// compileTemplate eg: https://github.com/vuejs/vue-loader/blob/next/src/templateLoader.ts#L33
-		const [templateDepsList, templateTransformedSource] = await withCache(compiledCache, [componentHash, compileTemplateOptions.source], async ({ preventCache }) => {
+		const [templateDepsList, templateTransformedSource] = await withCache(compiledCache, [strFilename, compileTemplateOptions.source], async ({ preventCache }) => {
 
 			const template = sfc_compileTemplate(compileTemplateOptions);
 
@@ -196,7 +195,7 @@ export async function createSFCModule(source: string, filename: AbstractPath, op
 
 		const src = descStyle.src ? (await (await getResource({ refPath: filename, relPath: descStyle.src }, options).getContent()).getContentData(false)) as string : descStyle.content;
 
-		const style = await withCache(compiledCache, [componentHash, src], async ({ preventCache }) => {
+		const style = await withCache(compiledCache, [strFilename, src], async ({ preventCache }) => {
 
 			// src: https://github.com/vuejs/vue-next/blob/15baaf14f025f6b1d46174c9713a2ec517741d0d/packages/compiler-sfc/src/compileStyle.ts#L70
 			const compiledStyle = await sfc_compileStyleAsync({

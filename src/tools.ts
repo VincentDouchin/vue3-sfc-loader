@@ -42,16 +42,16 @@ import { createSFCModule } from './createSFCModule'
 /**
  * @internal
  */
-const genSourcemap : boolean = !!process.env.GEN_SOURCEMAP;
+const genSourcemap: boolean = !!process.env.GEN_SOURCEMAP;
 
-const version : string = process.env.VERSION;
+const version: string = process.env.VERSION;
 
 
 // tools
 /**
  * @internal
  */
-export function formatError(message : string, path : string, source : string) : string {
+export function formatError(message: string, path: string, source: string): string {
 	return path + '\n' + message;
 }
 
@@ -59,41 +59,41 @@ export function formatError(message : string, path : string, source : string) : 
 /**
  * @internal
  */
-export function formatErrorLineColumn(message : string, path : string, source : string, line? : number, column? : number) : string {
+export function formatErrorLineColumn(message: string, path: string, source: string, line?: number, column?: number): string {
 	if (!line) {
 		return formatError(message, path, source)
 	}
 
-  const location = {
-    start: { line, column },
-  };
+	const location = {
+		start: { line, column },
+	};
 
-  return formatError(codeFrameColumns(source, location, { message }), path, source)
+	return formatError(codeFrameColumns(source, location, { message }), path, source)
 }
 
 /**
  * @internal
  */
-export function formatErrorStartEnd(message : string, path : string, source : string, start : number, end? : number) : string {
+export function formatErrorStartEnd(message: string, path: string, source: string, start: number, end?: number): string {
 	if (!start) {
-	  return formatError(message, path, source)
-  }
+		return formatError(message, path, source)
+	}
 
-  const location: SourceLocation = {
-    start: { line: 1, column: start }
-  };
-  if (end) {
-    location.end = {line: 1, column: end}
-  }
+	const location: SourceLocation = {
+		start: { line: 1, column: start }
+	};
+	if (end) {
+		location.end = { line: 1, column: end }
+	}
 
-  return formatError(codeFrameColumns(source, location, { message }), path, source)
+	return formatError(codeFrameColumns(source, location, { message }), path, source)
 }
 
 
 /**
  * @internal
  */
- export function hash(...valueList : any[]) : string {
+export function hash(...valueList: any[]): string {
 
 	return valueList.reduce((hashInstance, val) => hashInstance.append(String(val)), new SparkMD5()).end().slice(0, 8);
 }
@@ -105,7 +105,7 @@ export function formatErrorStartEnd(message : string, path : string, source : st
  * preventCache usage: non-fatal error
  * @internal
  */
-export async function withCache( cacheInstance : Cache, key : any[], valueFactory : ValueFactory ) : Promise<any> {
+export async function withCache(cacheInstance: Cache, key: any[], valueFactory: ValueFactory): Promise<any> {
 
 	let cachePrevented = false;
 
@@ -113,18 +113,18 @@ export async function withCache( cacheInstance : Cache, key : any[], valueFactor
 		preventCache: () => cachePrevented = true,
 	}
 
-	if ( !cacheInstance )
+	if (!cacheInstance)
 		return await valueFactory(api);
 
 	const hashedKey = hash(...key);
-	const valueStr = await cacheInstance.get(hashedKey);
-	if ( valueStr )
+	const valueStr = await cacheInstance.get(hashedKey, key);
+	if (valueStr)
 		return JSON.parse(valueStr);
 
 	const value = await valueFactory(api);
 
-	if ( !cachePrevented )
-		await cacheInstance.set(hashedKey, JSON.stringify(value));
+	if (!cachePrevented)
+		await cacheInstance.set(hashedKey, JSON.stringify(value), key);
 
 	return value;
 }
@@ -134,9 +134,9 @@ export async function withCache( cacheInstance : Cache, key : any[], valueFactor
  */
 export class Loading {
 
-	promise : Promise<ModuleExport>;
+	promise: Promise<ModuleExport>;
 
-	constructor(promise : Promise<ModuleExport>) {
+	constructor(promise: Promise<ModuleExport>) {
 
 		this.promise = promise;
 	}
@@ -147,9 +147,9 @@ export class Loading {
 /**
  * @internal
  */
-export function interopRequireDefault(obj : any) : any {
+export function interopRequireDefault(obj: any): any {
 
-  return obj && obj.__esModule ? obj : { default: obj };
+	return obj && obj.__esModule ? obj : { default: obj };
 }
 
 // node types: https://babeljs.io/docs/en/babel-types
@@ -159,12 +159,12 @@ export function interopRequireDefault(obj : any) : any {
  * import is a reserved keyword, then rename
  * @internal
  */
-export function renameDynamicImport(fileAst : t.File) : void {
+export function renameDynamicImport(fileAst: t.File): void {
 
 	traverse(fileAst, {
-		CallExpression(path : NodePath<t.CallExpression>) {
+		CallExpression(path: NodePath<t.CallExpression>) {
 
-			if ( t.isImport(path.node.callee) )
+			if (t.isImport(path.node.callee))
 				path.replaceWith(t.callExpression(t.identifier('import__'), path.node.arguments))
 		}
 	});
@@ -174,20 +174,20 @@ export function renameDynamicImport(fileAst : t.File) : void {
 /**
  * @internal
  */
-export function parseDeps(fileAst : t.File) : string[] {
+export function parseDeps(fileAst: t.File): string[] {
 
-	const requireList : string[] = [];
+	const requireList: string[] = [];
 
 	traverse(fileAst, {
-		ImportDeclaration(path : NodePath<t.ImportDeclaration>) {
+		ImportDeclaration(path: NodePath<t.ImportDeclaration>) {
 
 			requireList.push(path.node.source.value);
 		},
-		CallExpression(path : NodePath<t.CallExpression>) {
+		CallExpression(path: NodePath<t.CallExpression>) {
 
 			if (
-				   // @ts-ignore (Property 'name' does not exist on type 'ArrayExpression')
-				   path.node.callee.name === 'require'
+				// @ts-ignore (Property 'name' does not exist on type 'ArrayExpression')
+				path.node.callee.name === 'require'
 				&& path.node.arguments.length === 1
 				&& t.isStringLiteral(path.node.arguments[0])
 			) {
@@ -208,7 +208,7 @@ const targetBrowserBabelPlugins = { ...(typeof ___targetBrowserBabelPlugins !== 
 /**
  * @internal
  */
-export async function transformJSCode(source : string, moduleSourceType : boolean, filename : AbstractPath, additionalBabelParserPlugins : Options['additionalBabelParserPlugins'], additionalBabelPlugins : Options['additionalBabelPlugins'], log : Options['log']) : Promise<[string[], string]> {
+export async function transformJSCode(source: string, moduleSourceType: boolean, filename: AbstractPath, additionalBabelParserPlugins: Options['additionalBabelParserPlugins'], additionalBabelPlugins: Options['additionalBabelPlugins'], log: Options['log']): Promise<[string[], string]> {
 
 	let ast: t.File;
 	try {
@@ -217,15 +217,15 @@ export async function transformJSCode(source : string, moduleSourceType : boolea
 			// doc: https://babeljs.io/docs/en/babel-parser#options
 			sourceType: moduleSourceType ? 'module' : 'script',
 			sourceFilename: filename.toString(),
-			plugins:  [
-//				'optionalChaining',
-//				'nullishCoalescingOperator',
+			plugins: [
+				//				'optionalChaining',
+				//				'nullishCoalescingOperator',
 				...additionalBabelParserPlugins !== undefined ? additionalBabelParserPlugins : [],
 			],
 		});
-	} catch(ex) {
+	} catch (ex) {
 
-		log?.('error', 'parse script', formatErrorLineColumn(ex.message, filename.toString(), source, ex.loc.line, ex.loc.column + 1) );
+		log?.('error', 'parse script', formatErrorLineColumn(ex.message, filename.toString(), source, ex.loc.line, ex.loc.column + 1));
 		throw ex;
 	}
 
@@ -235,7 +235,7 @@ export async function transformJSCode(source : string, moduleSourceType : boolea
 	const transformedScript = await babel_transformFromAstAsync(ast, source, {
 		sourceMaps: genSourcemap, // doc: https://babeljs.io/docs/en/options#sourcemaps
 		plugins: [ // https://babeljs.io/docs/en/options#plugins
-			...moduleSourceType ? [ babelPluginTransformModulesCommonjs ] : [], // https://babeljs.io/docs/en/babel-plugin-transform-modules-commonjs#options
+			...moduleSourceType ? [babelPluginTransformModulesCommonjs] : [], // https://babeljs.io/docs/en/babel-plugin-transform-modules-commonjs#options
 			// @ts-ignore
 			...Object.values(targetBrowserBabelPlugins),
 			...additionalBabelPlugins !== undefined ? Object.values(additionalBabelPlugins) : [],
@@ -247,7 +247,7 @@ export async function transformJSCode(source : string, moduleSourceType : boolea
 		comments: false,
 	});
 
-	return [ depsList, transformedScript.code ];
+	return [depsList, transformedScript.code];
 }
 
 
@@ -255,15 +255,15 @@ export async function transformJSCode(source : string, moduleSourceType : boolea
 // module tools
 
 
-export async function loadModuleInternal(pathCx : PathContext, options : Options) : Promise<ModuleExport> {
+export async function loadModuleInternal(pathCx: PathContext, options: Options): Promise<ModuleExport> {
 
 	const { moduleCache, loadModule, handleModule } = options;
 
 	const { id, path, getContent } = options.getResource(pathCx, options);
 
-	if ( id in moduleCache ) {
+	if (id in moduleCache) {
 
-		if ( moduleCache[id] instanceof Loading )
+		if (moduleCache[id] instanceof Loading)
 			return await (moduleCache[id] as Loading).promise;
 		else
 			return moduleCache[id];
@@ -272,26 +272,26 @@ export async function loadModuleInternal(pathCx : PathContext, options : Options
 
 	moduleCache[id] = new Loading((async () => {
 
-		if ( loadModule ) {
+		if (loadModule) {
 
 			const module = await loadModule(id, options);
-			if ( module !== undefined )
+			if (module !== undefined)
 				return moduleCache[id] = module;
 		}
 
 		const { getContentData, type } = await getContent();
 
 		// note: null module is accepted
-		let module : ModuleExport | undefined | null = undefined;
+		let module: ModuleExport | undefined | null = undefined;
 
-		if ( handleModule !== undefined )
+		if (handleModule !== undefined)
 			module = await handleModule(type, getContentData, path, options);
 
-		if ( module === undefined )
+		if (module === undefined)
 			module = await defaultHandleModule(type, getContentData, path, options);
 
-		if ( module === undefined )
-			throw new TypeError(`Unable to handle ${ type } files (${ path })`);
+		if (module === undefined)
+			throw new TypeError(`Unable to handle ${type} files (${path})`);
 
 		return moduleCache[id] = module;
 
@@ -307,20 +307,20 @@ export async function loadModuleInternal(pathCx : PathContext, options : Options
  * Create a cjs module
  * @internal
  */
-export function createCJSModule(refPath : AbstractPath, source : string, options : Options) : Module {
+export function createCJSModule(refPath: AbstractPath, source: string, options: Options): Module {
 
 	const { moduleCache, pathResolve, getResource } = options;
 
-	const require = function(relPath : string) {
+	const require = function (relPath: string) {
 
 		const { id } = getResource({ refPath, relPath }, options);
-		if ( id in moduleCache )
+		if (id in moduleCache)
 			return moduleCache[id];
 
-		throw new Error(`require(${ JSON.stringify(id) }) failed. module not found in moduleCache`);
+		throw new Error(`require(${JSON.stringify(id)}) failed. module not found in moduleCache`);
 	}
 
-	const importFunction = async function(relPath : string) {
+	const importFunction = async function (relPath: string) {
 
 		return await loadModuleInternal({ refPath, relPath }, options);
 	}
@@ -340,11 +340,11 @@ export function createCJSModule(refPath : AbstractPath, source : string, options
 /**
  * @internal
  */
-export async function createJSModule(source : string, moduleSourceType : boolean, filename : AbstractPath, options : Options) : Promise<ModuleExport> {
+export async function createJSModule(source: string, moduleSourceType: boolean, filename: AbstractPath, options: Options): Promise<ModuleExport> {
 
 	const { compiledCache, additionalBabelParserPlugins, additionalBabelPlugins, log } = options;
 
-	const [ depsList, transformedSource ] = await withCache(compiledCache, [ version, source, filename ], async () => {
+	const [depsList, transformedSource] = await withCache(compiledCache, [version, source, filename], async () => {
 
 		return await transformJSCode(source, moduleSourceType, filename, additionalBabelParserPlugins, additionalBabelPlugins, log);
 	});
@@ -358,7 +358,7 @@ export async function createJSModule(source : string, moduleSourceType : boolean
  * Just load and cache given dependencies.
  * @internal
  */
-export async function loadDeps(refPath : AbstractPath, deps : AbstractPath[], options : Options) : Promise<void> {
+export async function loadDeps(refPath: AbstractPath, deps: AbstractPath[], options: Options): Promise<void> {
 
 	await Promise.all(deps.map(relPath => loadModuleInternal({ refPath, relPath }, options)))
 }
@@ -367,7 +367,7 @@ export async function loadDeps(refPath : AbstractPath, deps : AbstractPath[], op
 /**
  * Default implementation of handleModule
  */
- async function defaultHandleModule(type : string, getContentData : File['getContentData'], path : AbstractPath, options : Options) : Promise<ModuleExport | null> {
+async function defaultHandleModule(type: string, getContentData: File['getContentData'], path: AbstractPath, options: Options): Promise<ModuleExport | null> {
 
 	switch (type) {
 		case '.vue': return createSFCModule((await getContentData(false)) as string, path, options);
